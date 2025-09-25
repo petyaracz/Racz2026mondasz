@@ -1,3 +1,6 @@
+theory
+https://claude.ai/share/023e5ad6-9813-43c9-8402-3325f205cbb3
+ml
 https://claude.ai/share/79c4af9a-4dd2-4b20-b96f-4d47dd403471
 
 current solution:
@@ -8,3 +11,7 @@ alt solution:
 
 training - training svm
 ksvm estimates for test. but Claude warns these are approximate measures of uncertainty.
+
+to do both:
+
+set up train_data which is complete matrix and then use filtering to winnow it down for gcm or sg like that?

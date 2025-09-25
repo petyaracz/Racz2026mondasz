@@ -1,5 +1,5 @@
 ################################################
-# fit SVM
+# fit GCM
 # is target closer to cc or cvc?
 # separately for separate tags
 ################################################
@@ -9,6 +9,7 @@
 setwd('~/Github/Racz2026mondasz/')
 
 library(tidyverse)
+library(broom)
 
 # -- fun -- #
 
@@ -47,21 +48,54 @@ fitGCMspec = partial(fitGCM, var_s = .01, var_p = 2)
 t_nested = t |> 
   nest(.by = c(lemma_orth,tag_test))
 
+tuning = crossing(
+  var_s = seq(0.1,0.9,0.1),
+  var_p = 1:2
+) # ...
+
 fits = t_nested |> 
   mutate(
     weight = map(data, fitGCMspec)
+  ) |> 
+  rename(tag = tag_test) |> 
+  select(lemma_orth,tag,weight) |>
+  unnest(weight)
+
+d2a = d |> 
+  filter(!is.na(freq_v),!is.na(freq_nv)) |> 
+  summarise(
+    freq_v = sum(freq_v),
+    freq_nv = sum(freq_nv),
+    .by = lemma_orth
+  ) |> 
+  mutate(
+    lo_v_lemma = log(freq_v/freq_nv)
+  ) |> 
+  select(lemma_orth,lo_v_lemma)
+
+d2b = fits |> 
+  filter(tag == 'Prs.NDef.3Sg (mond)') |> 
+  rename(weight_lemma = weight) |> 
+  select(lemma_orth,weight_lemma) |> 
+  left_join(d2a)
+
+d2c = inner_join(fits,d)
+
+d3 = left_join(d2b,d2c)
+
+d4 = d3 |> 
+  select(freq_v,freq_nv,lemma_orth,lo_v,tag,weight,weight_lemma) |> 
+  pivot_longer(-c(freq_v,freq_nv,lemma_orth,lo_v,tag), names_to = 'weight_type', values_to = 'weight') |> 
+  add_count(lemma_orth) |> 
+  mutate(
+    scaled_weight = scale(weight),
+    lemma_2 = ifelse(n > 10, lemma_orth, 'other')
   )
 
-d2 = fits |> 
-  select(lemma_orth,tag_test,weight) |> 
-  rename(tag = tag_test) |> 
-  unnest(weight) |> 
-  left_join(d)
-
-d2 |> 
-  ggplot(aes(lo_v,weight)) +
+d4 |> 
+  ggplot(aes(lo_v,weight, colour = weight_type)) +
   geom_point() +
-  geom_smooth() +
-  facet_wrap( ~ tag)
-
-# need to incorporate lemma-level info as well
+  geom_smooth(method = 'lm') +
+  facet_wrap( ~ tag) +
+  scale_colour_grey() +
+  theme_bw()
