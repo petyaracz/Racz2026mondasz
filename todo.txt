@@ -1,1 +1,10 @@
 https://claude.ai/share/79c4af9a-4dd2-4b20-b96f-4d47dd403471
+
+current solution:
+test - training gcm
+need to fit to get preds for all paradigms x all paradigms (or maybe not)
+
+alt solution:
+
+training - training svm
+ksvm estimates for test. but Claude warns these are approximate measures of uncertainty.
