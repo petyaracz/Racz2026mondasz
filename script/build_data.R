@@ -1,4 +1,10 @@
+################################################
 # create cc verbs, vc verbs, mondasz/mondsz pairs
+# 1 pull in verb list from webcorpus 2, clean it up
+# 2 split to cc and cvc set, create pairs
+# 3 add extra info: nice tag, training cols
+# 4 push the whopper button
+################################################
 
 # -- head -- #
 
@@ -39,13 +45,12 @@ my_postags = v |>
 
 # filter for tags and non-ik verbs, create categories of "vc and cc"
 v2 = v |>
+  filter(hunspell) |> 
   filter(
-    hunspell,
     lemma != form,
     xpostag %in% my_postags,
-    str_detect(lemma, 
-               "(vala|vesz$|visz$|hisz$|jön$|ll$|[oeöz]|van$|megy$|li$|szősz|ik$)",
-               negate = T)
+    str_detect(form,lemma),
+    str_detect(lemma, '(van|lesz|nincs|jön|vesz|tesz|bán|vonz|nemz)$', negate = T)
   ) |> 
   rename(
     form_orth = form,
@@ -62,7 +67,7 @@ v2 = v |>
     suffix = str_remove(form, lemma),
     stem = str_remove(form, suffix),
     linking_vowel = ifelse(
-      str_detect(suffix, '^[aeouüö](t.k|sz|n.k|t.k|l.k|t.m|t.|tt.k|tt.m|tt.)$'),
+      str_detect(suffix, '^[aeouüö](t.k|s|n.k|t.k|l.k|t.m|.t.|tt.k|tt.m|tt.)$'),
       T,F
     ),
     coda = str_extract(lemma, glue('(?<={my_vowel}){my_consonant}+$')),
@@ -71,11 +76,13 @@ v2 = v |>
   )
 
 # tidying
-v2 = v2 |> 
-  filter(hunspell::hunspell_check(form, dict = hunspell::dictionary("hu_HU")))
+v3 = v2 |> 
+  filter(hunspell::hunspell_check(form_orth, dict = hunspell::dictionary("hu_HU")))
+
+# some eyeballing makes me conclude setdiff v2 v3 is mostly trash, we go with v3
 
 # forms w/ linking vowel
-d1a = v2 |> 
+d1a = v3 |> 
   filter(linking_vowel) |> 
   select(lemma,xpostag,form,form_orth,suffix,freq,lfpm10) |> 
   rename(
@@ -87,7 +94,7 @@ d1a = v2 |>
   )
 
 # forms w/o linking vowel
-d1b = v2 |> 
+d1b = v3 |> 
   filter(!linking_vowel) |> 
   select(lemma,xpostag,suffix,form,form_orth,freq,lfpm10) |> 
   rename(
@@ -99,7 +106,7 @@ d1b = v2 |>
   )
 
 # lemma-level information
-d1c = v2 |> 
+d1c = v3 |> 
   distinct(lemma,lemma_orth,xpostag,llfpm10,lemma_freq,coda,c1,c2,lemma_syl_count,class)
 
 # join them up, drop weird ones
@@ -115,7 +122,6 @@ d2 = d1c |>
     lo_v = log(odds_v),
     varies = !is.na(form_v) & !is.na(form_nv)
   )
-
 
 # make nice labels that tell you that afdauieihof2psgae is the "mondasz" one
 labels = d2 |> 
