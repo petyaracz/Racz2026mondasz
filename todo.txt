@@ -2,6 +2,8 @@ theory
 https://claude.ai/share/023e5ad6-9813-43c9-8402-3325f205cbb3
 ml
 https://claude.ai/share/79c4af9a-4dd2-4b20-b96f-4d47dd403471
+svm fitting
+https://claude.ai/share/04460842-29b4-4f66-a072-d8e99eec0c7a
 
 current solution:
 test - training gcm
