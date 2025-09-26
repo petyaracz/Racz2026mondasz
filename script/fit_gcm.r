@@ -2,6 +2,7 @@
 # fit GCM
 # is target closer to cc or cvc?
 # separately for separate tags
+# tune s and p on lemmata to prevent a forking paths explosion
 ################################################
 
 # -- head -- #
@@ -20,7 +21,7 @@ fitGCM = function(dat, var_s, var_p){
       pairwise_sim = exp ( - dist / var_s )^var_p,
       total_sim = sum(pairwise_sim)
     ) |> 
-    group_by(class) |> 
+    group_by(category) |> 
     mutate(
       category_sim = sum(pairwise_sim),
     ) |> 
@@ -28,13 +29,31 @@ fitGCM = function(dat, var_s, var_p){
     mutate(
       weight = category_sim / total_sim
     ) |> 
-    filter(class == 'vc') |> 
+    filter(category == 'vc training') |> 
     distinct(
       test,weight
     )
   
   return(dists)
 }
+
+# maybe a second fun that maps this through
+
+categoryGCM = function(dat, my_s, my_p){
+  dat |>
+  nest(.by = form) |>
+  mutate(
+    weight = map(data, ~fitGCM(., var_s = my_s, var_p = my_p))
+    ) |>
+  select(form, weight) |>
+  unnest(
+    weight
+    )  
+}
+
+# and an eval function!
+
+# ...
 
 # -- read -- #
 
@@ -43,15 +62,18 @@ d = read_tsv('dat/mondasz_mondsz_webcorpus.tsv')
 
 # -- wrangle -- #
 
-fitGCMspec = partial(fitGCM, var_s = .01, var_p = 2)
-
-t_nested = t |> 
-  nest(.by = c(lemma_orth,tag_test))
+l = t |>
+  filter(tag == '...')
 
 tuning = crossing(
-  var_s = seq(0.1,0.9,0.1),
+  var_s = seq(0.01,0.99,0.01),
   var_p = 1:2
-) # ...
+) |>
+mutate(
+  id = 1:n()
+  )
+
+
 
 fits = t_nested |> 
   mutate(
