@@ -140,6 +140,33 @@ labels = d2 |>
 d3 = left_join(d2,labels) |> 
   add_count(tag, name = 'tag_freq_in_dataset')
 
+# define "form" for distances
+
+d4 = d3 |> 
+  mutate(
+    category = case_when(
+      varies & class == 'cc' ~ 'test',
+      !varies & class == 'cc' ~ 'cc training',
+      !varies & class == 'vc' ~ 'vc training',
+    ),
+    form1 = ifelse(
+      is.na(form_v),
+      form_nv,
+      form_v
+    ),
+    form2 = ifelse(
+      is.na(form_nv),
+      form_v,
+      form_nv
+    ),
+    form = ifelse(
+      category == 'vc training',
+      form1,
+      form2
+    )
+  ) |> 
+  select(-form1,-form2)
+
 # -- write -- #
 
-write_tsv(d3, 'dat/mondasz_mondsz_webcorpus.tsv')
+write_tsv(d4, 'dat/mondasz_mondsz_webcorpus.tsv')
