@@ -1,3 +1,5 @@
+# test data too heterogeneous: need to narrow down to -nd or whatever.
+
 ################################################
 # fit GCM
 # is target closer to cc or cvc?
@@ -14,9 +16,10 @@ library(broom)
 
 # -- fun -- #
 
+# take specific word, s, p, return word weight
 fitGCM = function(dat, var_s, var_p){
   
-  dists = dat |> 
+  my_weight = dat |> 
     mutate(
       pairwise_sim = exp ( - dist / var_s )^var_p,
       total_sim = sum(pairwise_sim)
@@ -31,93 +34,79 @@ fitGCM = function(dat, var_s, var_p){
     ) |> 
     filter(category == 'vc training') |> 
     distinct(
-      test,weight
+      weight
     )
   
-  return(dists)
+  return(my_weight)
 }
 
-# maybe a second fun that maps this through
-
+# map fitGCM through an entire word list, return words w/ weights
 categoryGCM = function(dat, my_s, my_p){
   dat |>
-  nest(.by = form) |>
-  mutate(
-    weight = map(data, ~fitGCM(., var_s = my_s, var_p = my_p))
-    ) |>
-  select(form, weight) |>
-  unnest(
-    weight
-    )  
+    nest(.by = test) |> # test, not form
+    mutate(
+      weight = map(data, ~fitGCM(., var_s = my_s, var_p = my_p))
+      ) |>
+    select(test, weight) |>
+    unnest(
+        weight
+      )  
 }
 
-# and an eval function!
-
-# ...
+# take output of categoryGCM, merge with d, return r2 based on deviance (best metric, since glm optimises for it and the glms only differ in what the predictor is, not complexity)
+evalGCM = function(d,dat,is_mond = F){
+  if (is_mond){
+    dat2 = rename(dat, lemma = test)
+  } else {
+    dat2 = dat
+  }
+  dat2 = inner_join(d,dat2)
+  fit1 = glm(cbind(freq_nv,freq_v) ~ weight, data = dat2, family = binomial)  
+  fit0 = glm(cbind(freq_nv,freq_v) ~ 1, data = dat2, family = binomial)
+  r2 = 1 - deviance(fit1) / deviance(fit0)
+  return(r2)
+}
 
 # -- read -- #
 
-t = read_tsv('dat/distances.gz')
+t = read_tsv('dat/gcm_distances.gz')
 d = read_tsv('dat/mondasz_mondsz_webcorpus.tsv')
 
-# -- wrangle -- #
+# -- do the basic form (3sg) -- #
 
-l = t |>
-  filter(tag == '...')
+t_mond = t |> 
+  filter(
+    tag_test == 'Prs.NDef.3Sg (mond)'
+    )
 
 tuning = crossing(
   var_s = seq(0.01,0.99,0.01),
   var_p = 1:2
 ) |>
-mutate(
-  id = 1:n()
+  mutate(
+    id = 1:n()
   )
 
-
-
-fits = t_nested |> 
+mond_outputs = tuning |> 
   mutate(
-    weight = map(data, fitGCMspec)
+    out = map2(var_s, var_p, ~ categoryGCM(t_mond, my_s = .x, my_p = .y)),
+    r2 = map_dbl(out, ~ evalGCM(d = d, dat = .x, is_mond = T))
   ) |> 
-  rename(tag = tag_test) |> 
-  select(lemma_orth,tag,weight) |>
-  unnest(weight)
+  arrange(-r2) |> 
+  slice(1) |> 
+  select(var_s,var_p,r2)
+# .83, 1, .41
 
-d2a = d |> 
-  filter(!is.na(freq_v),!is.na(freq_nv)) |> 
-  summarise(
-    freq_v = sum(freq_v),
-    freq_nv = sum(freq_nv),
-    .by = lemma_orth
-  ) |> 
-  mutate(
-    lo_v_lemma = log(freq_v/freq_nv)
-  ) |> 
-  select(lemma_orth,lo_v_lemma)
+out_mond = categoryGCM(t_mond, .83, 1) |> 
+  rename(lemma = test) |> 
+  inner_join(d)
 
-d2b = fits |> 
-  filter(tag == 'Prs.NDef.3Sg (mond)') |> 
-  rename(weight_lemma = weight) |> 
-  select(lemma_orth,weight_lemma) |> 
-  left_join(d2a)
-
-d2c = inner_join(fits,d)
-
-d3 = left_join(d2b,d2c)
-
-d4 = d3 |> 
-  select(freq_v,freq_nv,lemma_orth,lo_v,tag,weight,weight_lemma) |> 
-  pivot_longer(-c(freq_v,freq_nv,lemma_orth,lo_v,tag), names_to = 'weight_type', values_to = 'weight') |> 
-  add_count(lemma_orth) |> 
-  mutate(
-    scaled_weight = scale(weight),
-    lemma_2 = ifelse(n > 10, lemma_orth, 'other')
-  )
-
-d4 |> 
-  ggplot(aes(lo_v,weight, colour = weight_type)) +
+out_mond |> 
+  ggplot(aes(lo_v,weight)) +
   geom_point() +
-  geom_smooth(method = 'lm') +
-  facet_wrap( ~ tag) +
-  scale_colour_grey() +
-  theme_bw()
+  geom_smooth()
+fit1 = glm(cbind(freq_nv,freq_v) ~ weight, data = out_mond, family = binomial)
+tidy(fit1)
+performance::r2_kullback(fit1)
+
+# this quite obviously breaks somewhere
