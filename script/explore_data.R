@@ -92,7 +92,6 @@ t2 |>
 t3 = t2 |> 
   filter(str_detect(tag, 'dalak|dotok|das|danak'),lo_v > -5, lo_v < 5)
   
-
 t3 |> 
   select(lemma,tag,lo_v) |> 
   pivot_wider(names_from = tag, values_from = lo_v) |> View()
@@ -105,3 +104,6 @@ t3 |>
   geom_line(colour = "grey50", linewidth = 0.5) +
   geom_point(size = 2) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+t3 |> 
+  write_tsv('dat/mondasz_target.tsv')

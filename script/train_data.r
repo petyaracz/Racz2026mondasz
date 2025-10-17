@@ -1,3 +1,5 @@
+# ho boy don't do this and save it, no point
+
 ################################################
 # create training data for GCM, SVM
 # GCM: pairs of test - training items with dist
@@ -27,10 +29,9 @@ forms = d |>
   ) |> 
   distinct(lemma,lemma_orth,category,form,tag)
   
-
 # add basic form
 lemmata = d |> 
-  distinct(lemma,lemma_orth,category,form) |> 
+  distinct(lemma,lemma_orth,category) |> 
   mutate(form = lemma) |> 
   mutate(tag = 'Prs.NDef.3Sg (mond)')
 
@@ -89,6 +90,7 @@ gcmdists = bind_rows(vc_dists,cc_dists) |>
 unique(all_forms$tag)
 
 buildSVMmatrices = function(all_forms,my_tag){
+  
   my_forms = all_forms |> 
     filter(tag == my_tag)
   
