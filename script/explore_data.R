@@ -35,10 +35,18 @@ t |>
 
 t |> 
   count(coda,tag, sort = T) |> 
-  pivot_wider(names_from = 'tag', values_from = 'n', values_fill = 0) |> View()
+  pivot_wider(names_from = 'tag', values_from = 'n', values_fill = 0)
 
 t2 = t |> 
   filter(c1 == 'n' | c2 %in% c('t','d'))
+
+varying_lemmata = t2 |> 
+  filter(str_detect(tag, 'dalak|dotok|das|danak'),lo_v > -5, lo_v < 5) |> 
+  distinct(lemma) |> 
+  pull(lemma)
+
+t3 = t2 |> 
+  filter(lemma %in% varying_lemmata)
 
 # -- viz -- #
 
@@ -88,10 +96,6 @@ t2 |>
   facet_wrap( ~ tag, ncol = 1) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
-
-t3 = t2 |> 
-  filter(str_detect(tag, 'dalak|dotok|das|danak'),lo_v > -5, lo_v < 5)
-  
 t3 |> 
   select(lemma,tag,lo_v) |> 
   pivot_wider(names_from = tag, values_from = lo_v) |> View()

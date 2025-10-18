@@ -8,3 +8,5 @@
 8. run phon dist, generate SVM preds for nonwords x training data []
 9. run "pick something" experiment for nonwords []
 10. write paper []
+
+idea: don't fit learners on each paradigm. instead, fit on stems but consider which stems vary in which paradigms.
