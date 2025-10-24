@@ -109,5 +109,5 @@ t3 |>
   geom_point(size = 2) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-t3 |> 
-  write_tsv('dat/mondasz_target.tsv')
+# t3 |> 
+#   write_tsv('dat/mondasz_target.tsv')

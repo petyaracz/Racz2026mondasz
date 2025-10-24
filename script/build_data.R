@@ -167,6 +167,40 @@ d4 = d3 |>
   ) |> 
   select(-form1,-form2)
 
+# -- filter for exp -- #
+
+# see explore_data
+
+varying_lemmata = d4 |> 
+  filter(
+    category == 'test',
+    str_detect(tag, 'dalak|dotok|das|danak'),lo_v > -5, lo_v < 5
+    ) |> 
+  distinct(lemma) |> 
+  pull(lemma)
+
+d5 = d4 |> 
+  filter(
+    category == 'test',
+    c1 == 'n' | c2 %in% c('t','d'),
+    str_detect(tag, 'dalak|dotok|das|danak'),
+    lemma %in% varying_lemmata
+    )
+
+# redefine categories in d4 based on d5
+
+d4b = d4 |> 
+  mutate(
+    category = case_when(
+    category == 'cc training' ~ 'cc_training',
+    category == 'vc training' ~ 'vc_training',
+    lemma %in% d5$lemma ~ 'test'
+    )
+  )
+
+count(d4b,category)
+
 # -- write -- #
 
-write_tsv(d4, 'dat/mondasz_mondsz_webcorpus.tsv')
+write_tsv(d4b, 'dat/mondasz_mondsz_webcorpus.tsv')
+write_tsv(d5, 'dat/mondasz_training.tsv')

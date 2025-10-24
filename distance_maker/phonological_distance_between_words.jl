@@ -131,7 +131,7 @@ end
 distance_dict = CSV.read("siptar_torkenczy_toth_racz_hungarian_dt.tsv", DataFrame; delim='\t')
 
 # load df w/ words
-words = CSV.read("../dat/mondasz_target.tsv", DataFrame; delim='\t')
+words = CSV.read("../dat/word_list_for_distance_maker.tsv", DataFrame; delim='\t')
 
 # words is the unique values of the lemma column in words as String
 words = unique(String.(words.lemma))

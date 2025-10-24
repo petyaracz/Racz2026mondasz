@@ -1,18 +1,10 @@
-# test data too heterogeneous: need to narrow down to -nd or whatever.
-
-################################################
-# fit GCM
-# is target closer to cc or cvc?
-# separately for separate tags
-# tune s and p on lemmata to prevent a forking paths explosion
-################################################
-
 # -- head -- #
 
 setwd('~/Github/Racz2026mondasz/')
 
 library(tidyverse)
 library(broom)
+library(kernlab)
 
 # -- fun -- #
 
@@ -46,11 +38,11 @@ categoryGCM = function(dat, my_s, my_p){
     nest(.by = test) |> # test, not form
     mutate(
       weight = map(data, ~fitGCM(., var_s = my_s, var_p = my_p))
-      ) |>
+    ) |>
     select(test, weight) |>
     unnest(
-        weight
-      )  
+      weight
+    )  
 }
 
 # take output of categoryGCM, merge with d, return r2 based on deviance (best metric, since glm optimises for it and the glms only differ in what the predictor is, not complexity)
@@ -69,15 +61,16 @@ evalGCM = function(d,dat,is_mond = F){
 
 # -- read -- #
 
-t = read_tsv('dat/gcm_distances.gz')
-d = read_tsv('dat/mondasz_mondsz_webcorpus.tsv')
+t = read_tsv('dat/aligned_word_pairs_phonological_distance.tsv.gz')
+c = read_tsv('dat/mondasz_mondsz_webcorpus.tsv')
 
-# -- do the basic form (3sg) -- #
+# -- fit -- #
 
-t_mond = t |> 
-  filter(
-    tag_test == 'Prs.NDef.3Sg (mond)'
-    )
+########################################
+# GCM
+########################################
+
+
 
 tuning = crossing(
   var_s = seq(0.01,0.99,0.01),
@@ -109,4 +102,3 @@ fit1 = glm(cbind(freq_nv,freq_v) ~ weight, data = out_mond, family = binomial)
 tidy(fit1)
 performance::r2_kullback(fit1)
 
-# this quite obviously breaks somewhere
