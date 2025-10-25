@@ -22,6 +22,7 @@
 4. distance_maker: establish phonological distance between varying verbs and nonverbs, to calculate a full distance matrix. the julia script is built on Frisch and Pierrehumbert, Dawdy-Hesterberg and Pierrehumbert, and Rácz Beckner Hay and Pierrehumbert. the minimal classes are based on phonological features based on Siptár and Törkenczy and Rácz Rebrus and Tóth.
 5. explore_distances.R: hand-filter the nonverbs, calculate distances for the hand-filtered nonverbs, and then pick a subset that are (more or less) evenly distributed across the similarity space so responses will be (more or less) maximally informative
 6. fit_learners.R: fit the SVM and the GCM, training them on the variable verbs and predicting the nonverbs.
-7. a simple forced-choice task on pavlovia to gather responses for the nonverbs.
+7. a simple forced-choice task on pavlovia to gather responses for the nonverbs. [https://gitlab.pavlovia.org/petyaraczbme/mondasz](link)
+8. glm to compare participant picks vs predictions
 
 4. explore_distances.R:
