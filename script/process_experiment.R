@@ -149,4 +149,4 @@ glue('> {n_passed} / {n_total} participants passed checks.')
 
 # -- write -- #
 
-write_tsv(d, 'dat/exp_data_tidy.tsv')
+write_tsv(d, 'dat/exp_data_tidy.tsv.gz')
