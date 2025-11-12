@@ -104,10 +104,14 @@ t3 |>
   select(lemma,tag,lo_v) |> 
   mutate(lemma_count = n(), .by = lemma) |> 
   filter(lemma_count > 1) |> 
-  ggplot(aes(x = reorder(lemma, lo_v), y = lo_v, colour = tag, group = lemma)) +
+  ggplot(aes(y = reorder(lemma, lo_v), x = lo_v, colour = tag, group = lemma)) +
+  geom_vline(xintercept = c(-3,3),colour = 'grey' )+
   geom_line(colour = "grey50", linewidth = 0.5) +
   geom_point(size = 2) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_colour_viridis_d()
+
+ggsave('viz/words.png', dpi = 'print', width = 6, height = 12)
 
 # t3 |> 
 #   write_tsv('dat/mondasz_target.tsv')
