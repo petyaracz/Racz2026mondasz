@@ -1,0 +1,35 @@
+mondtok, mondsz -> fonotaktikailag meg lehet magyarazni
+mondnak -> na ezt nem lehet
+
+mi az individualis lexemak gyakorisaga -> van eleg mindenbol, de persze durvan szor
+
+igekotos alakok mashogyan viselkednek, es a korpuszban ez nem latszik, mert az igekotok elvandorolnak! -- remeljuk, hogy ez nem szamit lol
+
+csak a -lak/lek targyas a negy exponens kozul
+
+-tok/-tek: ide berakosgathatja a harmadik szemelyu alakokat: kezdtek (ti vagy ok) vs ettetek / ettek (itt oke)
+
+miert van tobb kotohangzo ha gyakoribb az ige: azert, mert a kulonbozo kodak mas gyakorisaguak: ritka ng gyakori jt
+
+elso kerdes: miert ingadozik? specialis alparadigma! kvazianalitikus alakok-legyen cc utan is kotohangzo.
+
+paradigmacellak kozotti vizszintes (toldalekokon at) es fuggoleges (alakokon at) hasonlosag (ez lehet alaki vagy jelentesi is)
+
+ezt kvantifikaljuk ugy, hogy paradigmacellankent epitunk modellt, jobb lesz ez, mint a modell, ami az osszes tore mukodik
+
+mivel allitjuk szembe?
+
+-> paradigmas modell: ez nem tudja kezelni a variaciot
+-> minden analogia: ez nem tudja kezelni hat a paradigmat (hogy a kvazianalitikus es az analitikus es a szintetikus toldalekok mashogyan viselkednek)
+
+ordog a reszletekben:
+
+to hasonlosag + toldalek fonotaktika = additiv viszony
+to hasonlosag x toldalek = interaktiv viszony
+	sima regresszios modell, amiben csak to hasonlosagok vannak, nem kell toldalekonkent fittelni. de lehet!
+
+meg egy problema:
+
+a multido eseten a kotohangzo segit fenntartani a kontrasztot, es ez a hatas is ossze-vissza huzgalhatja a toldalekolt toveket
+	ha van kontrasztfenntartas: mert szinkron van, de ez addig van, amig vegul nincs
+
