@@ -147,6 +147,11 @@ n_total = length(unique(d$raw_id))
 
 glue('> {n_passed} / {n_total} participants passed checks.')
 
+ids = d |> 
+  distinct(raw_id) |> 
+  arrange(raw_id)
+
 # -- write -- #
 
 write_tsv(d, 'dat/exp_data_tidy.tsv.gz')
+write_tsv(ids, 'dat/passed.tsv')
