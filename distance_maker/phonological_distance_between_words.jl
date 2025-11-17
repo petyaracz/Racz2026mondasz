@@ -1,3 +1,9 @@
+# Phonological Distance Between Words
+# takes a list of words and a phonological distance dictionary
+# and computes pairwise phonological distances using dynamic programming alignment
+# note: it creates word1, word2, dist, but not word2, word1 dist also. beware.
+# Author: Péter Rácz
+
 # -- Setup -- #
 
 using CSV, DataFrames

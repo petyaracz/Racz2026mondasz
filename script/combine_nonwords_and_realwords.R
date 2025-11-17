@@ -67,5 +67,4 @@ ll = bind_rows(nl,rl)
 
 # -- write -- #
 
-write_tsv(ll, 'dat/word_list_for_distance_maker.tsv')
 write_tsv(nonwords, 'dat/nonwords_first_pass.tsv')

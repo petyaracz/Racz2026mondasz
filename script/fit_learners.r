@@ -8,97 +8,124 @@ library(kernlab)
 
 # -- fun -- #
 
-# take specific word, s, p, return word weight
-fitGCM = function(dat, var_s, var_p){
-  
-  my_weight = dat |> 
-    mutate(
-      pairwise_sim = exp ( - dist / var_s )^var_p,
-      total_sim = sum(pairwise_sim)
-    ) |> 
-    group_by(category) |> 
-    mutate(
-      category_sim = sum(pairwise_sim),
-    ) |> 
-    ungroup() |> 
-    mutate(
-      weight = category_sim / total_sim
-    ) |> 
-    filter(category == 'vc training') |> 
-    distinct(
-      weight
-    )
-  
-  return(my_weight)
-}
-
-# map fitGCM through an entire word list, return words w/ weights
-categoryGCM = function(dat, my_s, my_p){
-  dat |>
-    nest(.by = test) |> # test, not form
-    mutate(
-      weight = map(data, ~fitGCM(., var_s = my_s, var_p = my_p))
-    ) |>
-    select(test, weight) |>
-    unnest(
-      weight
-    )  
-}
-
-# take output of categoryGCM, merge with d, return r2 based on deviance (best metric, since glm optimises for it and the glms only differ in what the predictor is, not complexity)
-evalGCM = function(d,dat,is_mond = F){
-  if (is_mond){
-    dat2 = rename(dat, lemma = test)
-  } else {
-    dat2 = dat
-  }
-  dat2 = inner_join(d,dat2)
-  fit1 = glm(cbind(freq_nv,freq_v) ~ weight, data = dat2, family = binomial)  
-  fit0 = glm(cbind(freq_nv,freq_v) ~ 1, data = dat2, family = binomial)
-  r2 = 1 - deviance(fit1) / deviance(fit0)
-  return(r2)
-}
+# ... lift music 
 
 # -- read -- #
 
-t = read_tsv('dat/aligned_word_pairs_phonological_distance.tsv.gz')
-c = read_tsv('dat/mondasz_mondsz_webcorpus.tsv')
+# distances, info on existing words, results on nonwords
+t = read_tsv('distance_maker/aligned_word_pairs_phonological_distance.tsv')
+c = read_tsv('dat/mondasz_training.tsv')
+d = read_tsv('dat/exp_data_tidy.tsv.gz')
 
-# -- fit -- #
+# -- setup -- #
 
-########################################
-# GCM
-########################################
+dist = t |> 
+  select(word1,word2,phon_dist)
 
+# need cross-ref!
+dist2 = tibble(
+  word1 = dist$word2,
+  word2 = dist$word1,
+  phon_dist = dist$phon_dist
+)
 
+dist = bind_rows(dist,dist2)
 
-tuning = crossing(
-  var_s = seq(0.01,0.99,0.01),
-  var_p = 1:2
-) |>
-  mutate(
-    id = 1:n()
-  )
-
-mond_outputs = tuning |> 
-  mutate(
-    out = map2(var_s, var_p, ~ categoryGCM(t_mond, my_s = .x, my_p = .y)),
-    r2 = map_dbl(out, ~ evalGCM(d = d, dat = .x, is_mond = T))
+corpus_odds = c |> 
+  summarise(
+    freq_v = sum(freq_v),
+    freq_nv = sum(freq_nv),
+    .by = lemma
   ) |> 
-  arrange(-r2) |> 
-  slice(1) |> 
-  select(var_s,var_p,r2)
-# .83, 1, .41
+  mutate(lo_v = log(freq_v/freq_nv)) |> 
+  arrange(lemma)
 
-out_mond = categoryGCM(t_mond, .83, 1) |> 
-  rename(lemma = test) |> 
-  inner_join(d)
+d_lemma = d |> 
+  summarise(
+    lo_v = qlogis(mean(resp_v)),
+    .by = lemma
+  ) |> 
+  arrange(lemma)
 
-out_mond |> 
-  ggplot(aes(lo_v,weight)) +
-  geom_point() +
-  geom_smooth()
-fit1 = glm(cbind(freq_nv,freq_v) ~ weight, data = out_mond, family = binomial)
-tidy(fit1)
-performance::r2_kullback(fit1)
+# Get ordered word list
+word_order = corpus_odds$lemma
 
+# dist between real words only
+train_dist = dist |> 
+  filter(word1 %in% word_order, word2 %in% word_order)
+
+# dist between nonwords and real words
+test_dist = dist |> 
+  filter(word1 %in% d_lemma$lemma, word2 %in% word_order)
+
+# Convert to matrices WITH EXPLICIT ORDERING
+train_matrix = train_dist |> 
+  pivot_wider(names_from = word2, values_from = phon_dist) |>
+  arrange(factor(word1, levels = word_order)) |>  # ← CRITICAL: force row order
+  select(word1, all_of(word_order)) |>            # ← CRITICAL: force column order
+  select(-word1) |> 
+  as.matrix()
+
+test_matrix = test_dist |> 
+  pivot_wider(names_from = word2, values_from = phon_dist) |> 
+  arrange(word1) |>  # sort test words (order doesn't matter for test)
+  select(word1, all_of(word_order)) |>  # ← CRITICAL: columns match train_matrix
+  select(-word1) |> 
+  as.matrix()
+
+# kill nas on diagonal
+
+train_matrix[is.na(train_matrix)] = 0
+test_matrix[is.na(test_matrix)] = 0
+
+# Verify dimensions and ordering
+stopifnot(ncol(train_matrix) == nrow(corpus_odds))
+stopifnot(nrow(train_matrix) == nrow(corpus_odds))
+stopifnot(ncol(test_matrix) == nrow(corpus_odds))
+
+# Convert to kernel matrices
+sigma = 1 # tune later
+C = .1
+epsilon = .5
+
+train_kernel = exp(-train_matrix^2 / (2 * sigma^2))
+test_kernel = exp(-test_matrix^2 / (2 * sigma^2))
+
+# Fit model
+svm_model = ksvm(x = as.kernelMatrix(train_kernel),
+                 y = corpus_odds$lo_v,
+                 kernel = "matrix",
+                 type = "eps-svr",
+                 C = C,
+                 epsilon = epsilon
+                 )
+
+# Predict
+
+## training
+
+corpus_odds$pred = predict(svm_model)
+
+corpus_odds |> 
+  ggplot(aes(lo_v,pred)) +
+  geom_point()
+
+## test
+
+# Get support vector indices
+sv_indices = SVindex(svm_model)
+length(sv_indices)
+
+# Create kernel matrix: test points × support vectors only
+# test_kernel is currently 80 × 161 (test × all training)
+# We need: 80 × n_sv (test × support vectors)
+test_kernel_sv = test_kernel[, sv_indices]
+
+# Predict
+nonword_predictions = predict(svm_model, as.kernelMatrix(test_kernel_sv))
+
+d_lemma$pred = nonword_predictions
+
+d_lemma |> 
+  ggplot(aes(lo_v,pred,label = lemma)) +
+  geom_label()
