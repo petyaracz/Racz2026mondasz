@@ -8,7 +8,43 @@ library(kernlab)
 
 # -- fun -- #
 
-# ... lift music 
+# fit svm on always the same data, but w/ diff hyperparameters
+trainSVM = function(sigma, C, epsilon, train_matrix, test_matrix){
+  
+  train_kernel = exp(-train_matrix^2 / (2 * sigma^2))
+  test_kernel = exp(-test_matrix^2 / (2 * sigma^2))
+  
+  # Fit model
+  svm_model = ksvm(x = as.kernelMatrix(train_kernel),
+                   y = corpus_odds$lo_v,
+                   kernel = "matrix",
+                   type = "eps-svr",
+                   C = C,
+                   epsilon = epsilon
+  )
+  
+  # Predict
+  
+  # Get support vector indices
+  sv_indices = SVindex(svm_model)
+  # length(sv_indices)
+  
+  # Create kernel matrix: test points × support vectors only
+  # test_kernel is currently 80 × 161 (test × all training)
+  # We need: 80 × n_sv (test × support vectors)
+  test_kernel_sv = test_kernel[, sv_indices]
+  
+  # Predict
+  nonword_predictions = predict(svm_model, as.kernelMatrix(test_kernel_sv))
+  
+  return(nonword_predictions)
+}
+
+# get accuracy in tuning tibble
+getAccuracy = function(nonword_predictions, d_lemma){
+  d_lemma$pred = as.double(nonword_predictions)
+  with(d_lemma, tidy(cor.test(lo_v,pred, method = 'kendall')))
+}
 
 # -- read -- #
 
@@ -32,6 +68,7 @@ dist2 = tibble(
 dist = bind_rows(dist,dist2)
 
 corpus_odds = c |> 
+  filter(lo_v > -3, lo_v < 3) |> 
   summarise(
     freq_v = sum(freq_v),
     freq_nv = sum(freq_nv),
@@ -78,54 +115,28 @@ test_matrix = test_dist |>
 train_matrix[is.na(train_matrix)] = 0
 test_matrix[is.na(test_matrix)] = 0
 
-# Verify dimensions and ordering
-stopifnot(ncol(train_matrix) == nrow(corpus_odds))
-stopifnot(nrow(train_matrix) == nrow(corpus_odds))
-stopifnot(ncol(test_matrix) == nrow(corpus_odds))
+# -- tune -- #
 
-# Convert to kernel matrices
-sigma = 1 # tune later
-C = .1
-epsilon = .5
+tuning = crossing(
+  my_sigma = c(0.2, 0.5, 1),      # 3 values
+  my_C = c(0.1, 1, 10),           # 3 values  
+  my_epsilon = c(0.1, 0.2, 1)        # 2 values
+)
 
-train_kernel = exp(-train_matrix^2 / (2 * sigma^2))
-test_kernel = exp(-test_matrix^2 / (2 * sigma^2))
+tuned = tuning |> 
+  mutate(
+    pred = pmap(list(my_sigma, my_C, my_epsilon), 
+               ~ trainSVM(sigma = ..1, 
+                          C = ..2, 
+                          epsilon = ..3, 
+                          train_matrix = train_matrix, 
+                          test_matrix = test_matrix)),
+    acc = map(pred, ~ getAccuracy(., d_lemma))
+  )
 
-# Fit model
-svm_model = ksvm(x = as.kernelMatrix(train_kernel),
-                 y = corpus_odds$lo_v,
-                 kernel = "matrix",
-                 type = "eps-svr",
-                 C = C,
-                 epsilon = epsilon
-                 )
+tuned |> 
+  select(-pred) |> 
+  unnest(acc) |> 
+  filter(p.value == min(p.value))
 
-# Predict
 
-## training
-
-corpus_odds$pred = predict(svm_model)
-
-corpus_odds |> 
-  ggplot(aes(lo_v,pred)) +
-  geom_point()
-
-## test
-
-# Get support vector indices
-sv_indices = SVindex(svm_model)
-length(sv_indices)
-
-# Create kernel matrix: test points × support vectors only
-# test_kernel is currently 80 × 161 (test × all training)
-# We need: 80 × n_sv (test × support vectors)
-test_kernel_sv = test_kernel[, sv_indices]
-
-# Predict
-nonword_predictions = predict(svm_model, as.kernelMatrix(test_kernel_sv))
-
-d_lemma$pred = nonword_predictions
-
-d_lemma |> 
-  ggplot(aes(lo_v,pred,label = lemma)) +
-  geom_label()
