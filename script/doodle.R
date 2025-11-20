@@ -79,34 +79,60 @@ mindist = dist |>
   group_by(word1) |> 
   filter(phon_dist == min(phon_dist))
 
-# tbc
+mindists = mindist |> 
+  ungroup() |> 
+  mutate(group = 1:n()) |> 
+  pivot_longer(-c(group,phon_dist)) |> 
+  rename(
+    min_dist = phon_dist,
+    lemma = value
+         ) |> 
+  select(group,min_dist,lemma)
 
-# -- viz: coda and tag -- #
+coords2 = coords |> 
+  left_join(mindists)
 
 d_sum = d |> 
   summarise(
     p_v = mean(resp_v),
     .by = c(coda,tag,lemma_orth)
-            ) 
+  ) 
+
+# -- viz: coda and tag -- #
 
 d_sum |> 
-  ggplot(aes(p_v,coda)) +
-  geom_violin() +
-  geom_boxplot(width = .1) +
-  facet_wrap( ~ tag)
+  ggplot(aes(p_v, coda, colour = tag)) +
+  geom_violin(position = position_dodge(width = 0.9)) +
+  geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
+  scale_colour_colorblind() +
+  theme_bw()
 
 d_sum |> 
-  ggplot(aes(p_v,tag)) +
-  geom_violin() +
-  geom_boxplot(width = .1) +
-  facet_wrap( ~ coda)
+  ggplot(aes(p_v, tag, colour = coda)) +
+  geom_violin(position = position_dodge(width = 0.9)) +
+  geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
+  scale_colour_colorblind() +
+  theme_bw()
 
-# fit0 = glmer(as.double(resp_v) ~ coda * tag + (1|raw_id) + (1|lemma), data = d, family = binomial, control=glmerControl(optimizer="bobyqa"))
-# fit1 = glmer(as.double(resp_v) ~ coda + tag + (1|raw_id) + (1|lemma), data = d, family = binomial)
-# plot(compare_performance(fit0,fit1,metrics = 'common'))
-# plot_model(fit0, 'pred', terms = c("coda","tag"))
+d_sum |> 
+  filter(coda != 'ng') |> 
+  ggplot(aes(p_v, tag, colour = coda)) +
+  geom_boxplot() +
+  # geom_violin(position = position_dodge(width = 0.9)) +
+  # geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
+  scale_colour_colorblind() +
+  theme_bw()
 
-# -- viz: dists -- #
+fit0 = glmer(as.double(resp_v) ~ coda * tag + (1|raw_id) + (1|lemma), data = d, family = binomial, control=glmerControl(optimizer="bobyqa"))
+fit1 = glmer(as.double(resp_v) ~ coda + tag + (1|raw_id) + (1|lemma), data = d, family = binomial)
+plot(compare_performance(fit0,fit1,metrics = 'common'))
+plot_model(fit0, 'pred', terms = c("coda","tag"))
+plot_model(fit0, 'pred', terms = c("tag","coda"))
+d$ng = as.factor(d$coda == 'ng')
+fit3 = glmer(as.double(resp_v) ~ ng * tag + (1|raw_id) + (1|lemma), data = d, family = binomial, control=glmerControl(optimizer="bobyqa"))
+plot_model(fit3, 'pred', terms = c("tag","ng"))
+
+# -- viz: coords -- #
 
 # coords |> 
 #   ggplot(aes(x,y,label = lemma_orth, fill = type, alpha = lo_v)) +
@@ -117,9 +143,20 @@ d_sum |>
 # hahaha no
 
 coords |> 
-  ggplot(aes(x,y, pch = type, colour = lo_v)) +
+  mutate(lo_v_ntile = ntile(lo_v,4)) |> 
+  ggplot(aes(x,y, colour = type)) +
   geom_point() +
   theme_few() +
-  facet_wrap( ~ tag) +
-  scale_colour_viridis_b()
+  facet_wrap( ~ tag + lo_v_ntile) +
+  scale_colour_colorblind()
 
+coords2 |> 
+  filter(!is.na(group)) |> 
+  ggplot(aes(x,y,colour = type, group = as.character(group))) +
+  geom_point() +
+  geom_line(colour = 'grey') +
+  theme_few() +
+  facet_wrap( ~ tag) +
+  scale_colour_colorblind()
+
+# mds is not very intuitive / reliable apparently
