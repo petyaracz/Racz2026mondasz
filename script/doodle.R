@@ -17,7 +17,7 @@ d = read_tsv('dat/exp_data_tidy.tsv.gz')
 
 # -- dist -- #
 
-c = c |> filter(lo_v > -4, lo_v < 4)
+# c = c |> filter(lo_v > -4, lo_v < 4)
 
 ## coords: word coordinates and behaviour
 
@@ -144,19 +144,22 @@ plot_model(fit3, 'pred', terms = c("tag","ng"))
 
 coords |> 
   mutate(lo_v_ntile = ntile(lo_v,4)) |> 
-  ggplot(aes(x,y, colour = type)) +
+  ggplot(aes(x,y, colour = coda, pch = type)) +
   geom_point() +
-  theme_few() +
+  theme_void() +
   facet_wrap( ~ tag + lo_v_ntile) +
   scale_colour_colorblind()
 
 coords2 |> 
   filter(!is.na(group)) |> 
-  ggplot(aes(x,y,colour = type, group = as.character(group))) +
+  ggplot(aes(x,y,colour = coda, pch = type, group = as.character(group))) +
   geom_point() +
   geom_line(colour = 'grey') +
-  theme_few() +
+  theme_void() +
   facet_wrap( ~ tag) +
   scale_colour_colorblind()
 
 # mds is not very intuitive / reliable apparently
+# or word similarity is more weighted by ending and not whole word
+sort(unique(c$lemma_orth))
+unique(c$coda)
