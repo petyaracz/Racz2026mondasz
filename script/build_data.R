@@ -12,6 +12,7 @@ setwd('~/Github/Racz2026mondasz/')
 
 library(tidyverse)
 library(glue)
+library(duckdb)
 
 # -- fun -- #
 
@@ -31,21 +32,29 @@ my_consonant = '[^aáeéiíoóöőuúüű]'
 # -- read -- #
 
 # verbs from Hungarian Webcorpus 2
-v = read_tsv('https://github.com/petyaracz/Racz2024/raw/main/resource/webcorpus2freqlist/verb_forms.tsv.gz')
+
+con = dbConnect(duckdb())
+
+# Set memory limit explicitly
+dbExecute(con, "SET memory_limit='2GB'")
+
+v = tbl(con, sql("SELECT * FROM read_parquet('~/Github/Webcorpus2FrequencyList/frequencies.parquet')")) |>
+  filter(str_detect(xpostag, '^\\[\\/V\\]')) |> 
+  collect() # collect results
 
 # -- wrangle -- #
 
 # relevant cells according to Rebrus nagydoktori:
 # mondasz, mondanak, mondotok, mondalak, mondtak, mondtam, mondta
+# narrowing down to
+# c('[/V][Prs.NDef.2Sg]','[/V][Prs.NDef.3Pl]','[/V][Prs.1Sg›2]','[/V][Prs.NDef.2Pl]')
+# because mondtam ambiguous (def/indef), mondtak seeps into 2sg, and something (also these four seem to vary. this is a bit post hoc)
 # grab tags
-my_postags = v |> 
-  filter(form %in% c('mondasz', 'mondanak', 'mondotok', 'mondalak', 'mondtak', 'mondtam', 'mondta')) |> 
-  pull(xpostag) |> 
-  unique()
+my_postags = c('[/V][Prs.NDef.2Sg]','[/V][Prs.NDef.3Pl]','[/V][Prs.1Sg›2]','[/V][Prs.NDef.2Pl]')
 
 # filter for tags and non-ik verbs, create categories of "vc and cc"
 v2 = v |>
-  filter(hunspell) |> 
+  filter(hunspell) |>
   filter(
     lemma != form,
     xpostag %in% my_postags,
@@ -79,7 +88,8 @@ v2 = v |>
 v3 = v2 |> 
   filter(hunspell::hunspell_check(form_orth, dict = hunspell::dictionary("hu_HU")))
 
-# some eyeballing makes me conclude setdiff v2 v3 is mostly trash, we go with v3
+setdiff(v2$form, v3$form)
+# some eyeballing makes me conclude setdiff v2 v3 is mostly trash, but not completely. we'll lose some forms.
 
 # forms w/ linking vowel
 d1a = v3 |> 
@@ -104,6 +114,34 @@ d1b = v3 |>
     lfpm10nv = lfpm10,
     suffix_nv = suffix
   )
+
+# hunt for missing forms
+
+possible_nv_forms = d1a |> 
+  mutate(
+    form = case_when(
+      xpostag == '[/V][Prs.1Sg›2]' ~ str_remove(form_v, '.(?=l.k$)'),
+      xpostag == '[/V][Prs.NDef.2Pl]' ~ str_remove(form_v, '.(?=t.k$)'),
+      xpostag == '[/V][Prs.NDef.2Sg]' ~ str_remove(form_v, '.(?=s$)'),
+      xpostag == '[/V][Prs.NDef.3Pl]' ~ str_remove(form_v, '.(?=n.k$)'),
+    )
+  ) |> 
+  select(lemma,xpostag,form)
+
+found_nv_forms = v2 |> 
+  inner_join(possible_nv_forms) |> 
+  select(lemma,xpostag,form,form_orth,suffix,freq,lfpm10) |> 
+  rename(
+    form_nv_orth = form_orth,
+    form_nv = form,
+    freq_nv = freq,
+    lfpm10nv = lfpm10,
+    suffix_nv = suffix
+  )
+
+# put back found forms
+d1b = d1b |> 
+  bind_rows(found_nv_forms)
 
 # lemma-level information
 d1c = v3 |> 
@@ -171,36 +209,12 @@ d4 = d3 |>
 
 # see explore_data
 
-varying_lemmata = d4 |> 
-  filter(
-    category == 'test',
-    str_detect(tag, 'dalak|dotok|das|danak'),lo_v > -5, lo_v < 5
-    ) |> 
-  distinct(lemma) |> 
-  pull(lemma)
-
 d5 = d4 |> 
   filter(
-    category == 'test',
-    c1 == 'n' | c2 %in% c('t','d'),
-    str_detect(tag, 'dalak|dotok|das|danak'),
-    lemma %in% varying_lemmata
+    !is.na(lo_v)
     )
-
-# redefine categories in d4 based on d5
-
-d4b = d4 |> 
-  mutate(
-    category = case_when(
-    category == 'cc training' ~ 'cc_training',
-    category == 'vc training' ~ 'vc_training',
-    lemma %in% d5$lemma ~ 'test'
-    )
-  )
-
-count(d4b,category)
 
 # -- write -- #
 
-write_tsv(d4b, 'dat/mondasz_mondsz_webcorpus.tsv')
+write_tsv(d4, 'dat/mondasz_mondsz_webcorpus.tsv')
 write_tsv(d5, 'dat/mondasz_training.tsv')

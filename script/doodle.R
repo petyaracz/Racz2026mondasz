@@ -7,13 +7,41 @@ library(ggthemes)
 library(lme4)
 library(performance)
 library(sjPlot)
+library(patchwork)
 
 # -- read -- #
 
 # distances, info on existing words, results on nonwords
 t = read_tsv('distance_maker/aligned_word_pairs_phonological_distance.tsv')
 c = read_tsv('dat/mondasz_training.tsv')
+c2 = read_tsv('dat/mondasz_mondsz_webcorpus.tsv')
 d = read_tsv('dat/exp_data_tidy.tsv.gz')
+p = read_tsv('distance_maker/siptar_torkenczy_toth_racz_hungarian_st_julia.tsv')
+
+# -- coda -- #
+
+getCodaSim = function(coda1,coda2){
+  
+  c11 = str_extract(coda1, '^.')
+  c12 = str_extract(coda1, '.$')
+  c21 = str_extract(coda2, '^.')
+  c22 = str_extract(coda2, '.$')
+  
+  s1 = p[p$segment1 == c11 & p$segment2 == c21,]$similarity
+  s2 = p[p$segment1 == c12 & p$segment2 == c22,]$similarity
+  
+  sim = mean(s1,s2)
+  dist = 1-sim
+  return(dist)
+}
+
+codas = crossing(
+  coda1 = unique(c$coda),
+  coda2 = unique(c$coda)
+) |> 
+  mutate(
+    coda_dist = map2_dbl(coda1,coda2, ~ getCodaSim(.x,.y))
+  )
 
 # -- dist -- #
 
@@ -89,16 +117,82 @@ mindists = mindist |>
          ) |> 
   select(group,min_dist,lemma)
 
+# will yell at you:
 coords2 = coords |> 
   left_join(mindists)
+
+# -- sonority or whatever -- #
+
+d = d |> 
+  mutate(
+    suffix_c = case_when(
+      tag == 'Prs.NDef.2Sg (mondas)' ~ 's',
+      tag == 'Prs.NDef.3Pl (mondanak)' ~ 'n',
+      tag == 'Prs.1Sg›2 (mondalak)' ~ 'l',
+      tag == 'Prs.NDef.2Pl (mondotok)' ~ 't'
+    ),
+    sequence = glue::glue('{coda}(v){suffix_c}')
+  )
 
 d_sum = d |> 
   summarise(
     p_v = mean(resp_v),
-    .by = c(coda,tag,lemma_orth)
-  ) 
+    .by = c(coda,tag,lemma_orth,sequence)
+  ) |> 
+  mutate(sequence = fct_reorder(sequence, p_v))
+
+c = c |> 
+  mutate(
+    suffix_c = case_when(
+      tag == 'Prs.NDef.2Sg (mondas)' ~ 's',
+      tag == 'Prs.NDef.3Pl (mondanak)' ~ 'n',
+      tag == 'Prs.1Sg›2 (mondalak)' ~ 'l',
+      tag == 'Prs.NDef.2Pl (mondotok)' ~ 't'
+    ),
+    sequence = glue::glue('{coda}(v){suffix_c}')
+  )
+
+c2 = c2 |> 
+  mutate(
+    suffix_c = case_when(
+      tag == 'Prs.NDef.2Sg (mondas)' ~ 's',
+      tag == 'Prs.NDef.3Pl (mondanak)' ~ 'n',
+      tag == 'Prs.1Sg›2 (mondalak)' ~ 'l',
+      tag == 'Prs.NDef.2Pl (mondotok)' ~ 't'
+    ),
+    sequence = glue::glue('{coda}(v){suffix_c}')
+  )
+
+c2_sum = c2 |> 
+  filter(
+    !varies,
+    sequence %in% d_sum$sequence
+    )
 
 # -- viz: coda and tag -- #
+
+p1 = d_sum |> 
+  ggplot(aes(p_v, sequence)) +
+  geom_violin(position = position_dodge(width = 0.9)) +
+  geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
+  theme_bw() +
+  theme(axis.title.y = element_blank()) +
+  ggtitle('experiment')
+
+p2 = c |> 
+  mutate(
+    sequence = factor(sequence, levels = levels(d_sum$sequence)),
+    p_v = plogis(lo_v)
+    ) |> 
+  filter(!is.na(sequence)) |> 
+  ggplot(aes(p_v, sequence)) +
+  geom_violin(position = position_dodge(width = 0.9)) +
+  geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
+  theme_bw() +
+  theme(axis.title.y = element_blank()) +
+  ggtitle('corpus')
+
+p1 + p2
 
 d_sum |> 
   ggplot(aes(p_v, coda, colour = tag)) +
@@ -114,14 +208,7 @@ d_sum |>
   scale_colour_colorblind() +
   theme_bw()
 
-d_sum |> 
-  filter(coda != 'ng') |> 
-  ggplot(aes(p_v, tag, colour = coda)) +
-  geom_boxplot() +
-  # geom_violin(position = position_dodge(width = 0.9)) +
-  # geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
-  scale_colour_colorblind() +
-  theme_bw()
+d_sum
 
 fit0 = glmer(as.double(resp_v) ~ coda * tag + (1|raw_id) + (1|lemma), data = d, family = binomial, control=glmerControl(optimizer="bobyqa"))
 fit1 = glmer(as.double(resp_v) ~ coda + tag + (1|raw_id) + (1|lemma), data = d, family = binomial)
@@ -140,8 +227,9 @@ plot_model(fit0, 'pred', terms = c("tag","coda"))
 # hahaha no
 
 coords |> 
+  filter(!is.na(lo_v)) |> 
   mutate(lo_v_ntile = ntile(lo_v,4)) |> 
-  ggplot(aes(x,y, colour = coda, pch = type)) +
+  ggplot(aes(x,y, colour = type)) +
   geom_point() +
   theme_void() +
   facet_wrap( ~ tag + lo_v_ntile) +
@@ -155,8 +243,4 @@ coords2 |>
   theme_void() +
   facet_wrap( ~ tag) +
   scale_colour_colorblind()
-
-# mds is not very intuitive / reliable apparently
-# or word similarity is more weighted by ending and not whole word
-sort(unique(c$lemma_orth))
-unique(c$coda)
+# oh man
