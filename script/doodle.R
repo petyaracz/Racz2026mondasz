@@ -128,9 +128,6 @@ fit1 = glmer(as.double(resp_v) ~ coda + tag + (1|raw_id) + (1|lemma), data = d, 
 plot(compare_performance(fit0,fit1,metrics = 'common'))
 plot_model(fit0, 'pred', terms = c("coda","tag"))
 plot_model(fit0, 'pred', terms = c("tag","coda"))
-d$ng = as.factor(d$coda == 'ng')
-fit3 = glmer(as.double(resp_v) ~ ng * tag + (1|raw_id) + (1|lemma), data = d, family = binomial, control=glmerControl(optimizer="bobyqa"))
-plot_model(fit3, 'pred', terms = c("tag","ng"))
 
 # -- viz: coords -- #
 
