@@ -18,6 +18,20 @@ c2 = read_tsv('dat/mondasz_mondsz_webcorpus.tsv')
 d = read_tsv('dat/exp_data_tidy.tsv.gz')
 p = read_tsv('distance_maker/siptar_torkenczy_toth_racz_hungarian_st_julia.tsv')
 
+# -- devices -- #
+
+d2 = d |> 
+  mutate(
+    user_info2 = str_extract(user_info, '(?<=^device: )[^,]*(?=,)')
+    )
+
+d2 |> 
+  distinct(raw_id,user_info2) |>
+  count(user_info2) |> 
+  mutate(user_info2 = fct_reorder(user_info2, n)) |> 
+  ggplot(aes(user_info2,n)) +
+  geom_col()
+
 # -- coda -- #
 
 getCodaSim = function(coda1,coda2){
