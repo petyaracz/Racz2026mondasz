@@ -222,8 +222,6 @@ d_sum |>
   scale_colour_colorblind() +
   theme_bw()
 
-d_sum
-
 fit0 = glmer(as.double(resp_v) ~ coda * tag + (1|raw_id) + (1|lemma), data = d, family = binomial, control=glmerControl(optimizer="bobyqa"))
 fit1 = glmer(as.double(resp_v) ~ coda + tag + (1|raw_id) + (1|lemma), data = d, family = binomial)
 plot(compare_performance(fit0,fit1,metrics = 'common'))
@@ -249,12 +247,10 @@ coords |>
   facet_wrap( ~ tag + lo_v_ntile) +
   scale_colour_colorblind()
 
-coords2 |> 
-  filter(!is.na(group)) |> 
-  ggplot(aes(x,y,colour = coda, pch = type, group = as.character(group))) +
+coords |> 
+  filter(!is.na(lo_v)) |> 
+  ggplot(aes(x,y, colour = type, alpha = lo_v)) +
   geom_point() +
-  geom_line(colour = 'grey') +
   theme_void() +
   facet_wrap( ~ tag) +
   scale_colour_colorblind()
-# oh man
