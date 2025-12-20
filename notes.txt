@@ -33,3 +33,9 @@ meg egy problema:
 a multido eseten a kotohangzo segit fenntartani a kontrasztot, es ez a hatas is ossze-vissza huzgalhatja a toldalekolt toveket
 	ha van kontrasztfenntartas: mert szinkron van, de ez addig van, amig vegul nincs
 
+	stops, affricates < fricatives < nasals < liquids < glides < vowels
+
+sonority has to increase towards the centre of the syllable
+
+(II) Van azonban egy másik toldaléktípus, amely esetén a kötőhangzó általában akkor jelenik meg, amikor a tőváltozat két mássalhangzóra végződik (azaz CC-tőtípusú), és V- tőtípus, illetve VC-tőtípus után általában nem (pl. ró-nak, adná-nak, ad-nak vs. mond-anak). Ez a toldaléktípus több szempontból az analitikus toldalékokhoz hasonlít: az ide tartozó toldalékok tipikusan nem váltanak ki tőalternációkat (pl. ró-nak, *rov-nak; forog-nak, *forg-anak), és a tő és a toldalék határán mássalhangzó-torlódás (C-C) is állhat. Az analitikus toldalékokkal azonban mégsem viselkednek azonos módon, hiszen CC-tövek esetén kötőhangzósak, ezért ezt az új típust [Q] kvázianalitikusnak fogjuk nevezni. A kvázianalitikus típusú toldalékok mind inflexiók41: az IN2S -sz, az N3P -nak~nek, a 2PL -tok~tek~tök; a 2<1SG -lak~lek; a COND -na~ne és az INF -n(i). A felsorolásból =látszik, hogy (az IN2S -sz kivételével) stabil magánhangzót tartalmaznak42, és kezdetük mindig alveoláris mássalhangzó (n l sz t).
+
