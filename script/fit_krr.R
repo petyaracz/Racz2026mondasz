@@ -137,6 +137,7 @@ print('Fitting best model...')
 
 tuned_max = filter(tuned, r == max(r))
 
+# test
 predictions = trainKRR(
   sigma = tuned_max$my_sigma,           # adjust based on your distance scale
   alpha = tuned_max$my_alpha,         # adjust based on overfitting
@@ -155,7 +156,28 @@ results = tibble(
 results$alpha = tuned_max$my_alpha
 results$sigma = tuned_max$my_sigma
 
+# training
+predictions2 = trainKRR(
+  sigma = tuned_max$my_sigma,           # adjust based on your distance scale
+  alpha = tuned_max$my_alpha,         # adjust based on overfitting
+  train_matrix = train_matrix,
+  test_matrix = train_matrix,
+  target = csum$p # !!! !!!
+)
+
+# Results
+results2 = tibble(
+  lemma = real_words$lemma,
+  krr_pred = predictions2
+) |> 
+  left_join(c)
+
+results2$alpha = tuned_max$my_alpha
+results2$sigma = tuned_max$my_sigma
 print('Writing to file...')
 
 results |> 
-  write_tsv('dat/krr_results.tsv')
+  write_tsv('dat/krr_results_experiment.tsv')
+
+results2 |> 
+  write_tsv('dat/krr_results_corpus.tsv')

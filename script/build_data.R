@@ -205,6 +205,11 @@ d4 = d3 |>
   ) |> 
   select(-form1,-form2)
 
+# -- duplicates -- #
+
+d4 = d4 |> 
+  distinct()
+
 # -- filter for exp -- #
 
 # see explore_data
