@@ -207,42 +207,7 @@ p2 = c |>
   ggtitle('corpus')
 
 p1 + p2
-
-c |> 
-  mutate(sequence = factor(sequence, levels = levels(d_sum$sequence))) |> 
-  filter(!is.na(sequence)) |> 
-  arrange(-lemma_freq) |> 
-  group_by(sequence) |> 
-  slice(1:5) |> 
-  summarise(
-    words = paste(lemma_orth, collapse = ', ')
-  ) |> 
-  arrange(-as.double(sequence)) |> 
-  write_tsv('~/Downloads/vacak1.tsv')
-
-c |> 
-  mutate(sequence = factor(sequence, levels = levels(d_sum$sequence))) |> 
-  filter(!is.na(sequence)) |> 
-  arrange(-lemma_freq) |> 
-  group_by(coda) |> 
-  slice(1:5) |> 
-  summarise(
-    words = paste(lemma_orth, collapse = ', ')
-  ) |> 
-  write_tsv('~/Downloads/vacak2.tsv')
-
-d |> 
-  distinct(lemma_orth,coda) |> 
-  group_by(coda) |> 
-  slice(1:5) |> 
-  summarise(
-    words = paste(lemma_orth, collapse = ', ')
-  ) |> 
-  write_tsv('~/Downloads/vacak3.tsv')
-
-d |> 
-  distinct(tag) |> 
-  knitr::kable()
+ggsave('viz/ccvc.pdf', width = 8, height = 4)
 
 c |> 
   filter(!is.na(coda)) |> 
@@ -259,7 +224,7 @@ c |>
   theme_bw() +
   xlab('log(mondasz/mondsz)')
 
-c |> 
+p4 = c |> 
   filter(coda %in% d$coda) |> 
   mutate(p_v = plogis(lo_v)) |> 
   ggplot(aes(p_v, coda, colour = tag)) +
@@ -267,10 +232,11 @@ c |>
   geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
   scale_colour_colorblind() +
   theme_bw() +
+  theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
   xlab('p(mondasz)') +
   ggtitle('corpus')
 
-d_sum |> 
+p3 = d_sum |> 
   ggplot(aes(p_v, coda, colour = tag)) +
   geom_violin(position = position_dodge(width = 0.9)) +
   geom_boxplot(width = 0.1, position = position_dodge(width = 0.9)) +
@@ -280,6 +246,8 @@ d_sum |>
   guides(colour = 'none') +
   ggtitle('exp')
 
+p3 + p4
+ggsave('viz/cc_tag.pdf', width = 8, height = 4)
 
 d_sum |> 
   ggplot(aes(p_v, tag, colour = coda)) +
@@ -291,8 +259,11 @@ d_sum |>
 fit0 = glmer(as.double(resp_v) ~ coda * tag + (1|raw_id) + (1|lemma), data = d, family = binomial, control=glmerControl(optimizer="bobyqa"))
 fit1 = glmer(as.double(resp_v) ~ coda + tag + (1|raw_id) + (1|lemma), data = d, family = binomial)
 plot(compare_performance(fit0,fit1,metrics = 'common'))
-plot_model(fit0, 'pred', terms = c("coda","tag"))
-plot_model(fit0, 'pred', terms = c("tag","coda"))
+plot_model(fit0, 'pred', terms = c("coda","tag")) + theme_bw() + scale_fill_colorblind() + scale_colour_colorblind() + coord_flip()
+ggsave('viz/pred1.pdf', width = 6, height = 4)
+plot_model(fit0, 'pred', terms = c("tag","coda")) + theme_bw() + scale_fill_colorblind() + scale_colour_colorblind() + coord_flip()
+ggsave('viz/pred2.pdf', width = 6, height = 4)
+
 
 # -- viz: coords -- #
 
@@ -304,19 +275,19 @@ plot_model(fit0, 'pred', terms = c("tag","coda"))
 # 
 # hahaha no
 
-coords |> 
-  filter(!is.na(lo_v)) |> 
-  mutate(lo_v_ntile = ntile(lo_v,4)) |> 
-  ggplot(aes(x,y, colour = type)) +
-  geom_point() +
-  theme_void() +
-  facet_wrap( ~ tag + lo_v_ntile) +
-  scale_colour_colorblind()
-
-coords |> 
-  filter(!is.na(lo_v)) |> 
-  ggplot(aes(x,y, colour = type, alpha = lo_v)) +
-  geom_point() +
-  theme_void() +
-  facet_wrap( ~ tag) +
-  scale_colour_colorblind()
+# coords |> 
+#   filter(!is.na(lo_v)) |> 
+#   mutate(lo_v_ntile = ntile(lo_v,4)) |> 
+#   ggplot(aes(x,y, colour = type)) +
+#   geom_point() +
+#   theme_void() +
+#   facet_wrap( ~ tag + lo_v_ntile) +
+#   scale_colour_colorblind()
+# 
+# coords |> 
+#   filter(!is.na(lo_v)) |> 
+#   ggplot(aes(x,y, colour = type, alpha = lo_v)) +
+#   geom_point() +
+#   theme_void() +
+#   facet_wrap( ~ tag) +
+#   scale_colour_colorblind()
