@@ -86,7 +86,7 @@ v2 = v |>
 
 # tidying
 v3 = v2 |> 
-  filter(hunspell::hunspell_check(form_orth, dict = hunspell::dictionary("hu_HU")))
+  filter(hunspell::hunspell_check(form_orth, dict = hunspell::dictionary("hu-HU")))
 
 setdiff(v2$form, v3$form)
 # some eyeballing makes me conclude setdiff v2 v3 is mostly trash, but not completely. we'll lose some forms.
@@ -219,7 +219,25 @@ d5 = d4 |>
     !is.na(lo_v)
     )
 
+# -- filter for corpus stuff -- #
+
+d6 = d4 |> 
+  filter(class == 'cc') |> 
+  mutate(
+    suffix_init = ifelse(is.na(suffix_nv), NA, str_extract(suffix_nv, '^.')),
+    trigram = ifelse(is.na(suffix_nv), NA, glue('{coda}{suffix_init}')),
+    bigram1 = coda,
+    bigram2 = str_extract(trigram, '..$'),
+    type = case_when(
+      is.na(form_nv_orth) ~ 'linking vowel always',
+      is.na(form_v_orth) ~ 'linking vowel never',
+      T ~ 'linking vowel varies'
+    )
+  ) |> 
+  select(-coda,-class) 
+
 # -- write -- #
 
 write_tsv(d4, 'dat/mondasz_mondsz_webcorpus.tsv')
 write_tsv(d5, 'dat/mondasz_training.tsv')
+write_tsv(d6, 'dat/mondsz_webcorpus.tsv')
