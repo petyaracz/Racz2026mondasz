@@ -222,12 +222,12 @@ d5 = d4 |>
 # -- filter for corpus stuff -- #
 
 d6 = d4 |> 
-  filter(class == 'cc') |> 
+  filter(class == 'cc', str_detect(lemma, glue('{my_consonant}$'))) |> 
   mutate(
     suffix_init = ifelse(is.na(suffix_nv), NA, str_extract(suffix_nv, '^.')),
     trigram = ifelse(is.na(suffix_nv), NA, glue('{coda}{suffix_init}')),
     bigram1 = coda,
-    bigram2 = str_extract(trigram, '..$'),
+    bigram2 = ifelse(is.na(suffix_nv), NA, str_extract(trigram, '..$')),
     type = case_when(
       is.na(form_nv_orth) ~ 'linking vowel always',
       is.na(form_v_orth) ~ 'linking vowel never',
