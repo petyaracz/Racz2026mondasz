@@ -143,9 +143,11 @@ t1 = c |>
   mutate(a_per_b = paste(form_v_orth, form_nv_orth, sep = '/')) |>
   summarise(corpus = paste(a_per_b, collapse = ', '))
 
+DescTools::Gini(t1$n)
+
 t1
-t1 |> 
-  write_sheet('https://docs.google.com/spreadsheets/d/1HAQA_DwaGbVw1amDyCz8p78L8wMZTEAcdpmK_liKBxU/edit?usp=sharing', 't1')
+# t1 |> 
+#   write_sheet('https://docs.google.com/spreadsheets/d/1HAQA_DwaGbVw1amDyCz8p78L8wMZTEAcdpmK_liKBxU/edit?usp=sharing', 't1')
 
 t2 = c |>
   filter(
@@ -156,9 +158,9 @@ t2 = c |>
   arrange(lo_v) |> 
   select(lemma_orth,form_v_orth,form_nv_orth,freq_v,freq_nv,odds_v,lo_v)
 
-t2 |> 
-  mutate_if(is.double, ~ round(., 2)) |> 
-  write_sheet('https://docs.google.com/spreadsheets/d/1HAQA_DwaGbVw1amDyCz8p78L8wMZTEAcdpmK_liKBxU/edit?usp=sharing', 't2')
+# t2 |> 
+#   mutate_if(is.double, ~ round(., 2)) |> 
+#   write_sheet('https://docs.google.com/spreadsheets/d/1HAQA_DwaGbVw1amDyCz8p78L8wMZTEAcdpmK_liKBxU/edit?usp=sharing', 't2')
 
 # top 3 corpus examples per tag x coda combination, ranked by lemma frequency
 c |>
@@ -177,8 +179,8 @@ t3 = d |>
   mutate(a_per_b = paste(v_form, nv_form, sep = '/')) |>
   summarise(exp = paste(a_per_b, collapse = ', '))
 
-t3 |> 
-  write_sheet('https://docs.google.com/spreadsheets/d/1HAQA_DwaGbVw1amDyCz8p78L8wMZTEAcdpmK_liKBxU/edit?usp=sharing', 't3')
+# t3 |> 
+#   write_sheet('https://docs.google.com/spreadsheets/d/1HAQA_DwaGbVw1amDyCz8p78L8wMZTEAcdpmK_liKBxU/edit?usp=sharing', 't3')
 
 
 # -- figures -- #
@@ -187,11 +189,11 @@ t3 |>
 c |>
   filter(!coda %in% c('dz', 'mt', 'nl', 'št', 'ts')) |>
   ggplot(aes(tag, lo_v)) +
-  geom_rain() +
+  geom_boxplot() +
   coord_flip() +
   theme_bw() +
   theme(axis.title.y = element_blank()) +
-  ylab('log(mondasz/mondsz)') +
+  ylab('log(kötőhangzó/nincs kötőhangzó)') +
   facet_wrap(~ coda) +
   ggtitle('tővégi mássalhangzócsoportok a webkorpuszban')
 
@@ -207,12 +209,12 @@ c |>
   theme_bw() +
   theme(axis.title.y = element_blank()) +
   facet_wrap(~ coda2) +
-  scale_y_continuous(sec.axis = sec_axis(trans = ~ plogis(.), breaks = c(.01,.5,.99), name = 'p(mondasz)'), limits = c(-7,10), name = 'log(mondasz/mondsz)\nmondasz -> mondsz', breaks = c(-5,-2,0,2,5)) +
+  scale_y_continuous(sec.axis = sec_axis(trans = ~ plogis(.), breaks = c(.01,.5,.99), name = 'p(kötőhangzó)'), limits = c(-7,10), name = 'log(kötőhangzó/nincs kötőhangzó)', breaks = c(-5,-2,0,2,5)) +
   ggtitle('tővégi mássalhangzócsoportok\na webkorpuszban')
 
 ggsave('viz/fig1.png', dpi = 'print', width = 5, height = 5)
 
-# 3. experiment: per-item log(mondasz/mondsz) by tag, faceted by coda
+# 3. experiment: per-item log(kötőhangzó/nincs kötőhangzó) by tag, faceted by coda
 d_item |>
   ggplot(aes(tag, lo_v)) +
   geom_jitter(width = 0.25, height = 0, alpha = 0.3, size = 1, color = "grey40") +
@@ -220,21 +222,21 @@ d_item |>
   coord_flip() +
   theme_bw() +
   theme(axis.title.y = element_blank()) +
-  ylab('log(mondasz/mondsz)') +
+  ylab('log(kötőhangzó/nincs kötőhangzó)') +
   facet_wrap(~ coda) +
-  scale_y_continuous(sec.axis = sec_axis(trans = ~ plogis(.), breaks = c(.5,.75,.9), name = 'p(mondasz)'), limits = c(-1.5,2.5), name = 'log(mondasz/mondsz)\nmondasz -> mondsz', breaks = c(-1,0,1,2)) +
+  scale_y_continuous(sec.axis = sec_axis(trans = ~ plogis(.), breaks = c(.5,.75,.9), name = 'p(kötőhangzó)'), limits = c(-1.5,2.5), name = 'log(kötőhangzó/nincs kötőhangzó)', breaks = c(-1,0,1,2)) +
   ggtitle('tővégi mássalhangzócsoportok\na kísérletben')
 
 ggsave('viz/fig2.png', dpi = 'print', width = 5, height = 5)
 
-# 4. experiment: per-item log(mondasz/mondsz) by coda, faceted by tag
+# 4. experiment: per-item log(kötőhangzó/nincs kötőhangzó) by coda, faceted by tag
 d_item |>
   ggplot(aes(coda, lo_v)) +
-  geom_rain() +
+  geom_boxplot() +
   coord_flip() +
   theme_bw() +
   theme(axis.title.y = element_blank()) +
-  ylab('log(mondasz/mondsz)') +
+  ylab('log(kötőhangzó/nincs kötőhangzó)') +
   facet_wrap(~ tag) +
   ggtitle('experiment: by coda and tag')
 
@@ -246,9 +248,9 @@ p1 = cb |>
   theme_bw() +
   coord_flip() +
   xlab('tővégi mássalhangzók +\ntoldalékkezdő mássalhangzó') +
-  ylab('log(mondasz/mondsz)') +
+  ylab('log(kötőhangzó/nincs kötőhangzó)') +
   ggtitle('webkorpusz') + 
-  scale_y_continuous(sec.axis = sec_axis(trans = ~ plogis(.), breaks = c(.01,.5,.99), name = 'p(mondasz)'), limits = c(-7,10), name = 'log(mondasz/mondsz)\nmondasz -> mondsz', breaks = c(-5,-2,0,2,5)) 
+  scale_y_continuous(sec.axis = sec_axis(trans = ~ plogis(.), breaks = c(.01,.5,.99), name = 'p(kötőhangzó)'), limits = c(-7,10), name = 'log(kötőhangzó/nincs kötőhangzó)', breaks = c(-5,-2,0,2,5)) 
 
 p2 = db |>
   ggplot(aes(consonants2, lo_v)) +
@@ -257,9 +259,9 @@ p2 = db |>
   theme_bw() +
   coord_flip() +
   theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
-  ylab('log(mondasz/mondsz)') +
+  ylab('log(kötőhangzó/nincs kötőhangzó)') +
   ggtitle('kísérlet') + 
-  scale_y_continuous(sec.axis = sec_axis(trans = ~ plogis(.), breaks = c(.5,.75,.9), name = 'p(mondasz)'), limits = c(-1.5,2.5), name = 'log(mondasz/mondsz)\nmondasz -> mondsz', breaks = c(-1,0,1,2))
+  scale_y_continuous(sec.axis = sec_axis(trans = ~ plogis(.), breaks = c(.5,.75,.9), name = 'p(kötőhangzó)'), limits = c(-1.5,2.5), name = 'log(kötőhangzó/nincs kötőhangzó)', breaks = c(-1,0,1,2))
 
 p1 + p2 + plot_layout(axes = 'collect')
 
@@ -270,8 +272,8 @@ cors |>
   ggplot(aes(exp, corpus, label = consonants2)) +
   geom_text() +
   theme_bw() +
-  xlab('kísérlet log(mondasz/mondsz)') +
-  ylab('webkorpusz log(mondasz/mondsz)') +
+  xlab('kísérlet log(kötőhangzó/nincs kötőhangzó)') +
+  ylab('webkorpusz log(kötőhangzó/nincs kötőhangzó)') +
   ggtitle('tővégi mássalhangzók +\ntoldalékkezdő mássalhangzó arányok')
 
 ggsave('viz/fig4.png', dpi = 'print', width = 4, height = 4)
