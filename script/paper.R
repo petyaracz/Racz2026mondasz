@@ -23,7 +23,7 @@ d  = read_csv('dat/exp_data_tidy.csv.gz')  # forced-choice experiment responses
 # -- sums -- #
 
 d |> 
-  distinct(raw_id,gender) |> 
+  distinct(clean_id,gender) |> 
   count(gender)
 
 d |> 
@@ -201,19 +201,22 @@ c |>
 # not looking good.
 
 # 2. corpus: restricted to the four coda types used in the experiment
+# point size = log10(freq_v + freq_nv): flags lemma log-odds computed from tiny counts
 c |>
   filter(!is.na(coda2)) |>
+  mutate(freq_total = freq_v + freq_nv) |>
   ggplot(aes(tag, lo_v)) +
-  geom_jitter(width = 0.25, height = 0, alpha = 0.3, size = 1, color = "grey40") +
+  geom_jitter(aes(size = log10(freq_total)), width = 0.25, height = 0, alpha = 0.3, color = "grey40") +
   geom_tufteboxplot(median.type = "line", hoffset = 0, width = 3) +
   coord_flip() +
   theme_bw() +
   theme(axis.title.y = element_blank()) +
+  scale_size_continuous(name = 'log10(korpuszgyakoriság)', range = c(0.3, 3)) +
   facet_wrap(~ coda2) +
   scale_y_continuous(sec.axis = sec_axis(trans = ~ plogis(.), breaks = c(.01,.5,.99), name = 'p(kötőhangzó)'), limits = c(-7,10), name = 'log(kötőhangzó/nincs kötőhangzó)', breaks = c(-5,-2,0,2,5)) +
   ggtitle('tővégi mássalhangzócsoportok\na webkorpuszban')
 
-ggsave('viz/fig1.png', dpi = 'print', width = 5, height = 5)
+ggsave('viz/fig1.png', dpi = 'print', width = 7.5, height = 5)
 
 # 3. experiment: per-item log(kötőhangzó/nincs kötőhangzó) by tag, faceted by coda
 d_item |>
@@ -242,16 +245,19 @@ d_item |>
   ggtitle('experiment: by coda and tag')
 
 # 5. corpus and experiment side by side, both ordered by corpus log-odds per cluster
+# corpus panel: point size = log10(freq_v + freq_nv), same rationale as fig1
 p1 = cb |>
+  mutate(freq_total = freq_v + freq_nv) |>
   ggplot(aes(consonants2, lo_v)) +
-  geom_jitter(width = 0.25, height = 0, alpha = 0.3, size = 1, color = "grey40") +
+  geom_jitter(aes(size = log10(freq_total)), width = 0.25, height = 0, alpha = 0.3, color = "grey40") +
   geom_tufteboxplot(median.type = "line", hoffset = 0, width = 3) +
   theme_bw() +
   coord_flip() +
   xlab('tővégi mássalhangzók +\ntoldalékkezdő mássalhangzó') +
   ylab('log(kötőhangzó/nincs kötőhangzó)') +
-  ggtitle('webkorpusz') + 
-  scale_y_continuous(sec.axis = sec_axis(trans = ~ plogis(.), breaks = c(.01,.5,.99), name = 'p(kötőhangzó)'), limits = c(-7,10), name = 'log(kötőhangzó/nincs kötőhangzó)', breaks = c(-5,-2,0,2,5)) 
+  ggtitle('webkorpusz') +
+  scale_size_continuous(name = 'log10(korpuszgyakoriság)', range = c(0.3, 3)) +
+  scale_y_continuous(sec.axis = sec_axis(trans = ~ plogis(.), breaks = c(.01,.5,.99), name = 'p(kötőhangzó)'), limits = c(-7,10), name = 'log(kötőhangzó/nincs kötőhangzó)', breaks = c(-5,-2,0,2,5))
 
 p2 = db |>
   ggplot(aes(consonants2, lo_v)) +
