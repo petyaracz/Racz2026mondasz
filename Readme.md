@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/1062793079.svg)](https://doi.org/10.5281/zenodo.22681904)
+
 ## Linking vowel alternation in Hungarian verb paradigms
 
 ### Concept
