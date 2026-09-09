@@ -152,6 +152,7 @@ n_total = length(unique(d$raw_id))
 glue('> {n_passed} / {n_total} participants passed checks.')   # quick console summary
 
 ids = d |>
+  filter(checks_passed %in% c('8 / 8', '7 / 8', '6 / 8')) |>   # keep only participants who passed comprehension checks
   distinct(raw_id) |>
   arrange(raw_id)   # sorted participant ID list (for record-keeping / GDPR log)
 

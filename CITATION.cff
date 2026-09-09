@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this code or data, please cite it as below."
+title: "Linking vowel alternation in Hungarian verb paradigms"
+type: dataset
+authors:
+  - family-names: "Rácz"
+    given-names: "Péter"
+    orcid: "https://orcid.org/0000-0001-7896-4801"
+    affiliation: "Department of Cognitive Science, Faculty of Natural Sciences, Budapest University of Technology and Economics"
+date-released: 2026-09-09
+license: MIT
+keywords:
+  - Hungarian
+  - morphology
+  - linking vowel
+  - vowel epenthesis
+  - psycholinguistics
+  - corpus linguistics

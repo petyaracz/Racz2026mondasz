@@ -12,6 +12,7 @@ library(ggthemes)  # fancy plots
 library(knitr)     # kable tables
 library(patchwork) # combining ggplots side by side
 library(googlesheets4) # to shovel tables into the gdoc
+library(ggrepel)   # position labels in scatterplot
 
 # -- read -- #
 
@@ -270,7 +271,7 @@ ggsave('viz/fig3.png', dpi = 'print', width = 6, height = 6)
 # 6. scatter: corpus log(freq_v/freq_nv) vs experiment log(n_v/n_nv) per consonant cluster
 cors |>
   ggplot(aes(exp, corpus, label = consonants2)) +
-  geom_text() +
+  geom_text_repel() +
   theme_bw() +
   xlab('kísérlet log(kötőhangzó/nincs kötőhangzó)') +
   ylab('webkorpusz log(kötőhangzó/nincs kötőhangzó)') +

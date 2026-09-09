@@ -1,9 +1,0 @@
-there could be three factors determining mondasz/mondsz type variation
-
-1. analogy: CC stems support CC, CVC stems support CVC or something like that. details not important ehre.
-2. counts in corpus: if CC#/CCC is well-established in corpus, breaking it up with linking vowel is less important
-3. phonetics: ng reduces to ŋ, ts reduces to, well, ts, doubles degeminate: ll -> l etc.
-
-in practice, corpus behaviour is 100% determined by (3). residual analysis confirms that counts don't add anything beyond "if it reduces to a simpler cluster, it's more okay to have it". analogy can be done in multiple ways but doesn't seem to capture anything beyond "things that end in specific CC#" which is just the phon with extra steps.
-
-this doesn't bode well to the linking-vowels-as-paradigms story, but this is only one piece of evidence amongst many, and a fairly indirect one at that. peace out

@@ -4,7 +4,7 @@ library(tidyverse)
 
 setwd('~/Github/Racz2026mondasz/')
 
-d = read_tsv('dat/exp_data_tidy.tsv.gz', show_col_types = FALSE)
+d = read_csv('dat/exp_data_tidy.csv.gz', show_col_types = FALSE)
 c = read_tsv('dat/corpus_cc_varies.tsv', show_col_types = FALSE)
 
 # complete cases only
